@@ -1,0 +1,25 @@
+{
+  "businessCentralRules": {
+    "version": "1.0",
+    "rules": [
+      "Follow business naming conventions for all code",
+      "Include proper error handling in all functions",
+      "Add JSDoc comments for all public APIs",
+      "Use TypeScript for all new code",
+      "Follow the project's architectural patterns"
+    ],
+    "context": {
+      "businessDomain": "Business Central",
+      "preferredPatterns": ["Repository pattern", "SOLID principles"],
+      "coding_standards": {
+        "naming": "PascalCase for types, camelCase for variables",
+        "indentation": "4 spaces",
+        "bracing": "Allman style (braces on new lines)"
+      },
+      "architecture": {
+        "patterns": ["Repository", "SOLID", "Clean Architecture"],
+        "layers": ["UI", "Business Logic", "Data Access"]
+      }
+    }
+  }
+} 
