@@ -1,91 +1,65 @@
-# BC-MCP (Business Central Modeling Collaboration Platform)
+# Business Central MCP Server
 
-A centralized server for Business Central AL development editor rules and configurations.
-
-## Purpose
-
-BC-MCP provides a centralized way to manage and distribute cursor editor rules and configurations for Business Central AL development. This helps teams maintain consistent coding practices across projects and developers.
+A server that provides standardized development rules and context for Business Central projects, optimized for use with Cursor editor.
 
 ## Features
 
-- Centralized storage for editor configurations and rules
-- Version control for configuration settings
-- API for retrieving and updating rules
-- Integration with Visual Studio Code and AL Language extension
-- Support for custom rule sets per project/team
+- **Static Rules**: JSON-based rules for Cursor editor
+- **Render Deployment**: Easy deployment to Render.com
+- **Fallback Mode**: Works without database connection
+- **Team-Friendly**: Rules automatically applied to all team members
 
-## Getting Started
+## Quick Start
 
-### Prerequisites
+### For Team Members
 
-- Node.js (v14+)
-- npm or yarn 
-- Access to Business Central environments (for testing)
+To use the BC standards in your project:
 
-### Installation
+1. Clone this repository or copy the following files to your project:
+   - `bc-rules.json`
+   - `.cursor-context`
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/BC-MCP.git
+2. Cursor will automatically pick up these rules when editing files in your project.
 
-# Navigate to the project directory
-cd BC-MCP
+### For Administrators
 
-# Install dependencies
-npm install
+To update or manage the rules:
 
-# Start the server
-npm start
+1. Edit `bc-rules.json` directly to update static rules
+2. Or use the MongoDB database to store and manage rules dynamically
+3. Run `node scripts/generateRules.js` to update the static file from the database
+
+## Deployment
+
+### Using Render (Recommended)
+
+1. Run `./scripts/deployRender.sh` to prepare for deployment
+2. Push to GitHub
+3. Connect repository to Render.com
+4. Set environment variables in Render dashboard:
+   - `NODE_ENV`: `production`
+   - `MCP_SERVER_PORT`: `10000`
+   - `MONGODB_URI`: Your MongoDB connection string (optional)
+
+## Endpoints
+
+- `/cursorrules`: Get the current rules (JSON format)
+- `/health`: Server health check
+
+## Rule Structure
+
+Rules are structured as follows:
+
+```json
+{
+  "version": "1.0",
+  "rules": [
+    "Follow business naming conventions for all code",
+    "Include proper error handling in all functions"
+  ],
+  "context": {
+    "businessDomain": "Business Central",
+    "preferredPatterns": ["Repository pattern", "SOLID principles"]
+  }
+}
 ```
-
-### Configuration
-
-Configuration files are located in the `config` directory. Modify `config.json` to suit your environment.
-
-## Usage
-
-### API Endpoints
-
-- `GET /api/rules` - Retrieve all rules
-- `GET /api/rules/:ruleId` - Retrieve a specific rule
-- `POST /api/rules` - Create a new rule
-- `PUT /api/rules/:ruleId` - Update an existing rule
-- `DELETE /api/rules/:ruleId` - Delete a rule
-
-## Contributing
-
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-# Business Central MCP Server for Cursor
-
-This server standardizes AI assistance in Cursor editor by providing consistent context and rules.
-
-## For Server Administrators
-
-1. Clone this repository
-2. Run `node install.js` to set up the server
-3. Run `npm start` to start the MCP server
-4. Ensure the server is accessible to all team members (consider deploying to an internal server)
-
-## For Developers
-
-To connect your Cursor editor to our Business Central standards:
-
-1. Open Cursor editor
-2. Go to Settings > AI Configuration > External Context
-3. Add a new connection with URL: `http://mcp-server-url:3000/cursorrules`
-4. Name it "Business Central Standards"
-5. Click "Connect" and verify the connection is successful
-
-Now your AI assistants will have the standardized context for all our business logic and coding standards.
-
-## Troubleshooting
-
-If you encounter issues connecting to the server:
-1. Ensure you can reach the server URL in your browser
-2. Check that your network allows connections to the server port
-3. Contact the admin team if problems persist
