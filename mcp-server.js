@@ -28,17 +28,37 @@ const cursorRules = {
   }
 };
 
-// Endpoint to serve cursor rules
+// Endpoint to serve cursor rules as JSON
 app.get('/cursorrules', (req, res) => {
   res.json(cursorRules);
+});
+
+// NEW: SSE endpoint for Cursor
+app.get('/cursorrules-sse', (req, res) => {
+  // Set headers for SSE
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  // Send the rules as an SSE event
+  res.write(`data: ${JSON.stringify(cursorRules)}\n\n`);
+
+  // Keep the connection open but don't send more data
+  // Cursor just needs the initial data
+
+  // Handle client disconnect
+  req.on('close', () => {
+    console.log('SSE connection closed');
+    res.end();
+  });
 });
 
 // Endpoint that can provide additional context based on specific requests
 app.get('/context/:contextType', (req, res) => {
   // Handle different types of context requests
   const contextType = req.params.contextType;
-  
-  switch(contextType) {
+
+  switch (contextType) {
     case 'architecture':
       res.json({ /* Architecture details */ });
       break;
@@ -60,7 +80,8 @@ app.listen(PORT, () => {
   console.log(`MCP Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Available endpoints:`);
-  console.log(`- /cursorrules (GET): Get all cursor rules`);
+  console.log(`- /cursorrules (GET): Get all cursor rules (JSON)`);
+  console.log(`- /cursorrules-sse (GET): Get cursor rules via SSE stream`);
   console.log(`- /context/:contextType (GET): Get specific context`);
   console.log(`- /health (GET): Server health check`);
 }); 
