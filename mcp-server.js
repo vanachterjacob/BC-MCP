@@ -33,14 +33,16 @@ app.get('/cursorrules', (req, res) => {
   res.json(cursorRules);
 });
 
-// NEW: MCP-compatible endpoint for Cursor
+// Revised SSE endpoint with connection keepalive
 app.get('/cursorrules-sse', (req, res) => {
   // Set headers for SSE
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
 
-  // Send server info message
+  console.log('SSE connection established from:', req.headers['user-agent']);
+
+  // Send initial server info message
   res.write(`data: ${JSON.stringify({
     type: "server_info",
     server_info: {
@@ -49,125 +51,67 @@ app.get('/cursorrules-sse', (req, res) => {
     }
   })}\n\n`);
 
-  // Send tool definitions - this is the key part Cursor needs
-  res.write(`data: ${JSON.stringify({
-    type: "tool_definitions",
-    tool_definitions: [
-      {
-        name: "bc_validate_naming",
-        description: "Validates if a name follows Business Central naming conventions",
-        parameters: {
-          type: "object",
-          properties: {
-            name: {
-              type: "string",
-              description: "The name to validate"
+  // Send tool definitions
+  setTimeout(() => {
+    res.write(`data: ${JSON.stringify({
+      type: "tool_definitions",
+      tool_definitions: [
+        {
+          name: "bc_help",
+          description: "Get help with Business Central development",
+          parameters: {
+            type: "object",
+            properties: {
+              topic: {
+                type: "string",
+                description: "Topic to get help with"
+              }
             },
-            type: {
-              type: "string",
-              enum: ["variable", "function", "class", "table", "page"],
-              description: "The type of identifier being validated"
-            }
-          },
-          required: ["name"]
+            required: ["topic"]
+          }
         }
-      },
-      {
-        name: "bc_suggest_pattern",
-        description: "Suggests the appropriate Business Central pattern for a use case",
-        parameters: {
-          type: "object",
-          properties: {
-            description: {
-              type: "string",
-              description: "Description of the functionality to implement"
-            }
-          },
-          required: ["description"]
-        }
-      },
-      {
-        name: "bc_structure_help",
-        description: "Provides guidance on Business Central solution structure",
-        parameters: {
-          type: "object",
-          properties: {
-            component: {
-              type: "string",
-              enum: ["table", "page", "report", "codeunit", "query", "xmlport"],
-              description: "The component type to get structure help for"
-            }
-          },
-          required: ["component"]
-        }
-      }
-    ]
-  })}\n\n`);
+      ]
+    })}\n\n`);
+  }, 100); // Small delay to ensure messages are processed in order
 
-  // Handle tool calls - this would be from Cursor when tools are invoked
-  req.on('data', (data) => {
-    try {
-      const message = JSON.parse(data.toString());
-
-      if (message.type === "tool_call") {
-        const call = message.tool_call;
-        console.log(`Tool call received: ${call.name}`, call.parameters);
-
-        // Process the tool call based on which tool was invoked
-        let result;
-
-        switch (call.name) {
-          case "bc_validate_naming":
-            const name = call.parameters.name;
-            const type = call.parameters.type || "variable";
-
-            // Logic to validate name according to Business Central conventions
-            const isValid = validateBCNaming(name, type);
-            result = {
-              is_valid: isValid,
-              message: isValid
-                ? `The name "${name}" follows Business Central naming conventions for ${type}`
-                : `The name "${name}" does not follow Business Central naming conventions for ${type}`
-            };
-            break;
-
-          case "bc_suggest_pattern":
-            const description = call.parameters.description;
-            // Logic to suggest a pattern
-            result = suggestBCPattern(description);
-            break;
-
-          case "bc_structure_help":
-            const component = call.parameters.component;
-            // Logic to provide structure help
-            result = getBCStructureHelp(component);
-            break;
-
-          default:
-            result = { error: "Unknown tool" };
-        }
-
-        // Send the tool call result back to Cursor
-        res.write(`data: ${JSON.stringify({
-          type: "tool_call_result",
-          id: call.id,
-          result: result
-        })}\n\n`);
-      }
-    } catch (error) {
-      console.error("Error processing tool call:", error);
-      res.write(`data: ${JSON.stringify({
-        type: "error",
-        error: error.message
-      })}\n\n`);
-    }
-  });
+  // Setup keepalive to prevent connection timeout
+  const keepAliveInterval = setInterval(() => {
+    res.write(`:keepalive\n\n`);
+  }, 30000); // Send keepalive every 30 seconds
 
   // Handle client disconnect
   req.on('close', () => {
     console.log('SSE connection closed');
+    clearInterval(keepAliveInterval);
     res.end();
   });
+
+  // Optional: Handle POST data for tool calls
+  if (req.method === 'POST') {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk.toString();
+    });
+
+    req.on('end', () => {
+      try {
+        const message = JSON.parse(body);
+        console.log('Received message:', message);
+
+        if (message.type === 'tool_call') {
+          // Process tool call and send response
+          const result = { result: "This is a sample result" };
+          res.write(`data: ${JSON.stringify({
+            type: "tool_call_result",
+            id: message.tool_call.id,
+            result
+          })}\n\n`);
+        }
+      } catch (error) {
+        console.error('Error processing message:', error);
+      }
+    });
+  }
 });
 
 // Helper functions for processing tool calls
